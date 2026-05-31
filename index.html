@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>玥玥作息</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:#06284d;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Arial,sans-serif;color:#3b2b20;}
+    body{display:flex;justify-content:center;align-items:flex-start;}
+    .app{width:min(100vw,430px);min-height:100vh;background:#06284d;}
+    .screen{position:relative;width:100%;overflow:hidden;background:#06284d;}
+    .page-img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none;}
+    .title-patch{position:absolute;z-index:8;display:none;left:27.1%;top:1.15%;width:44%;height:auto;filter:drop-shadow(0 8px 10px rgba(0,0,0,.25));}
+    .screen.needs-title .title-patch{display:block;}
+    .hot,.hit{position:absolute;z-index:20;background:rgba(0,0,0,0);border:0;padding:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+    .hot:focus,.hit:focus{outline:none}
+    .top-tabs{position:absolute;z-index:15;left:5%;top:10.7%;width:90%;height:6.2%;display:grid;grid-template-columns:repeat(5,1fr);}
+    .bottom-tabs{position:absolute;z-index:15;left:3.2%;bottom:1.0%;width:93.6%;height:8.2%;display:grid;grid-template-columns:repeat(5,1fr);}
+    .top-tabs button,.bottom-tabs button{background:rgba(0,0,0,0);border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+    .upload-hit{left:73.5%;top:1.4%;width:23.5%;height:4.2%;}
+    .export-hit{left:73.5%;top:5.9%;width:23.5%;height:4.2%;}
+    .layer{position:absolute;inset:0;z-index:18;pointer-events:none;}
+    .layer *{pointer-events:auto;}
+    .field{position:absolute;border:0;background:rgba(255,248,238,0);color:#4b3c2d;font-weight:700;font-size:clamp(12px,3.5vw,16px);padding:0 10px;border-radius:8px;outline:none;}
+    .field:focus{background:rgba(255,248,238,.68);box-shadow:0 0 0 2px rgba(27,75,117,.2);}
+    .field.has-value{background:rgba(255,248,238,.82);}
+    select.field{appearance:auto;-webkit-appearance:auto;}
+    .save-hit{position:absolute;border:0;background:rgba(0,0,0,0);}
+    .small-btn{position:absolute;background:rgba(0,0,0,0);border:0;}
+    .choice{position:absolute;border:0;background:rgba(0,0,0,0);border-radius:10px;}
+    .choice.active{box-shadow:inset 0 0 0 2px rgba(30,77,118,.8),0 0 0 3px rgba(255,248,225,.55);background:rgba(255,255,255,.08)}
+    .dyn{position:absolute;z-index:19;color:#1d5a8e;font-weight:900;text-align:center;font-family:Georgia,"Times New Roman",serif;letter-spacing:-.03em;text-shadow:0 1px 0 rgba(255,255,255,.65);pointer-events:none;white-space:nowrap;}
+    .dyn.small{font-family:inherit;font-size:clamp(9px,2.5vw,13px);color:#654f39;letter-spacing:0;font-weight:800;}
+    .recent-box{position:absolute;z-index:19;overflow:hidden;color:#3c2d21;font-weight:700;line-height:1.4;pointer-events:none;}
+    .recent-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-bottom:1px dashed rgba(116,92,67,.3);padding:3px 0;font-size:clamp(10px,3vw,14px);}
+    .recent-row.two{grid-template-columns:1fr 1fr;}
+    .notice{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(18px);opacity:0;background:rgba(35,24,16,.92);color:#fff8e9;padding:10px 14px;border-radius:999px;font-size:13px;z-index:99;transition:.18s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.26);}
+    .notice.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    #importFile{display:none}
+  </style>
+</head>
+<body>
+<input id="importFile" type="file" accept="application/json,.json">
+<main class="app">
+  <section class="screen water" id="screen">
+    <img id="pageImage" class="page-img" src="assets/page-water.png" alt="玥玥作息功能复刻页面" />
+    <img class="title-patch" src="assets/title-yueyue.png" alt="玥玥作息" />
+    <button class="hot upload-hit" id="uploadBtn" aria-label="上传数据"></button>
+    <button class="hot export-hit" id="exportBtn" aria-label="导出数据"></button>
+    <div class="top-tabs" aria-label="顶部页面切换">
+      <button data-page="water" aria-label="喝水"></button><button data-page="sleep" aria-label="睡眠"></button><button data-page="exercise" aria-label="运动"></button><button data-page="period" aria-label="周期"></button><button data-page="stats" aria-label="统计"></button>
+    </div>
+    <div class="bottom-tabs" aria-label="底部页面切换">
+      <button data-page="water" aria-label="喝水"></button><button data-page="sleep" aria-label="睡眠"></button><button data-page="exercise" aria-label="运动"></button><button data-page="period" aria-label="周期"></button><button data-page="stats" aria-label="统计"></button>
+    </div>
+    <div class="layer" id="layer"></div>
+  </section>
+</main>
+<div class="notice" id="notice"></div>
+<script>
+const STORE='yueyue_exact_functional_v1';
+const pages={water:'assets/page-water.png',sleep:'assets/page-sleep.png',exercise:'assets/page-exercise.png',period:'assets/page-period.png',stats:'assets/page-stats.png'};
+const order=['water','sleep','exercise','period','stats'];
+const pageName={water:'喝水',sleep:'睡眠',exercise:'运动',period:'周期',stats:'统计'};
+let current='water';
+let data=load();
+let selectedExercise='爬坡';
+let selectedSleepQuality='很好';
+let statRange='周';
+const screen=document.getElementById('screen'), img=document.getElementById('pageImage'), layer=document.getElementById('layer'), notice=document.getElementById('notice');
+function defaultData(){return {water:[],sleep:[],exercise:[],period:[],settings:{waterGoal:2000}}}
+function load(){try{return {...defaultData(),...(JSON.parse(localStorage.getItem(STORE))||{})}}catch(e){return defaultData()}}
+function save(){localStorage.setItem(STORE,JSON.stringify(data))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function pad(n){return String(n).padStart(2,'0')}
+function today(){const d=new Date();return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
+function nowTime(){const d=new Date();return `${pad(d.getHours())}:${pad(d.getMinutes())}`}
+function isoTime(t){return `${today()}T${t||nowTime()}`}
+function fmtDate(s){if(!s)return'';const [y,m,d]=s.slice(0,10).split('-');return `${y}.${m}.${d}`}
+function toast(t){notice.textContent=t;notice.classList.add('show');clearTimeout(window.__toast);window.__toast=setTimeout(()=>notice.classList.remove('show'),1700)}
+function setPage(page){current=page;img.src=pages[page];screen.className='screen '+page+(page==='water'?'':' needs-title');layer.innerHTML='';renderLayer();window.scrollTo({top:0,behavior:'instant'});}
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.page)));
+document.getElementById('uploadBtn').onclick=()=>document.getElementById('importFile').click();
+document.getElementById('exportBtn').onclick=exportData;
+document.getElementById('importFile').onchange=importData;
+function pct(v){return v+'%'}
+function el(tag,cls,style,attrs={}){const e=document.createElement(tag); if(cls)e.className=cls; if(style)Object.assign(e.style,style); for(const [k,v] of Object.entries(attrs)){if(k==='text')e.textContent=v; else if(k==='html')e.innerHTML=v; else e.setAttribute(k,v)} layer.appendChild(e); return e;}
+function field(id,type,left,top,width,height,placeholder,value=''){const f=el(type==='select'?'select':'input','field',{left:pct(left),top:pct(top),width:pct(width),height:pct(height)}, {id}); if(type!=='select')f.type=type; if(placeholder)f.placeholder=placeholder; if(value)f.value=value; const upd=()=>f.classList.toggle('has-value',!!f.value); f.addEventListener('input',upd); upd(); return f;}
+function button(left,top,width,height,fn,cls='save-hit'){const b=el('button',cls,{left:pct(left),top:pct(top),width:pct(width),height:pct(height)}); b.onclick=fn; return b;}
+function dyn(text,left,top,width,height,fs=5.2,cls='dyn'){return el('div',cls,{left:pct(left),top:pct(top),width:pct(width),height:pct(height),fontSize:`clamp(16px,${fs}vw,${Math.round(fs*8)}px)`,lineHeight:pct(100)}, {text});}
+function renderLayer(){
+  if(current==='water') return renderWater();
+  if(current==='sleep') return renderSleep();
+  if(current==='exercise') return renderExercise();
+  if(current==='period') return renderPeriod();
+  if(current==='stats') return renderStats();
+}
+function renderWater(){
+  const totalToday=data.water.filter(x=>x.time.slice(0,10)===today()).reduce((s,x)=>s+x.ml,0)||1200;
+  const goal=data.settings.waterGoal||2000; const pctDone=Math.min(100,Math.round(totalToday/goal*100));
+  dyn(totalToday,13.5,50.4,16,4.0,6.5); dyn(goal,46.5,50.4,18,4.0,6.5); dyn(pctDone,80.0,50.4,11,4.0,6.5);
+  const ml=field('wMl','number',35.7,61.8,31.0,3.2,'例如 300');
+  const t=field('wTime','time',36.0,65.9,21.5,3.2,'',nowTime());
+  const note=field('wNote','text',35.6,70.7,52.5,3.2,'例如：运动后补水');
+  button(68.5,61.7,8,3.5,()=>{ml.value=Math.max(0,(Number(ml.value)||0)-50);ml.dispatchEvent(new Event('input'))},'small-btn');
+  button(78.0,61.7,8,3.5,()=>{ml.value=(Number(ml.value)||0)+50;ml.dispatchEvent(new Event('input'))},'small-btn');
+  button(28.0,75.8,45.5,4.0,()=>{const v=Math.round(Number(ml.value)); if(!v)return toast('请输入喝水量'); data.water.push({id:uid(),ml:v,time:isoTime(t.value),note:note.value.trim()});save();toast('已保存喝水记录');setPage('water')});
+}
+function renderExercise(){
+  const todayMin=data.exercise.filter(x=>x.time.slice(0,10)===today()).reduce((s,x)=>s+x.minutes,0)||35;
+  const weekMin=data.exercise.reduce((s,x)=>s+x.minutes,0)||160;
+  dyn(todayMin,14.6,40.7,13,3.6,5.3); dyn(weekMin,47.0,40.7,14,3.6,5.3); dyn(data.exercise.length||4,79.4,40.7,8,3.6,5.3);
+  const t=field('eTime','time',34.2,54.6,21.6,2.9,'',nowTime());
+  const typeBtns=[['爬坡',25.0],['散步',40.8],['拉伸',56.8],['跑步',72.8]]; typeBtns.forEach(([name,left])=>{const b=button(left,58.0,14.2,3.5,()=>{selectedExercise=name;renderExerciseChoices()},'choice'); b.dataset.type=name;});
+  const min=field('eMin','number',34.0,63.8,32.7,2.8,'例如 30');
+  const note=field('eNote','text',34.0,67.1,52.8,2.8,'例如：感觉很棒，坚持！');
+  button(68.7,63.5,7,3.3,()=>{min.value=Math.max(0,(Number(min.value)||0)-5);min.dispatchEvent(new Event('input'))},'small-btn');
+  button(77.0,63.5,7,3.3,()=>{min.value=(Number(min.value)||0)+5;min.dispatchEvent(new Event('input'))},'small-btn');
+  button(29.0,70.9,45.0,4.0,()=>{const v=Math.round(Number(min.value));if(!v)return toast('请输入运动时长');data.exercise.push({id:uid(),type:selectedExercise,minutes:v,time:isoTime(t.value),note:note.value.trim()});save();toast('已保存运动记录');setPage('exercise')});
+  renderExerciseChoices(); renderRecentExercise();
+}
+function renderExerciseChoices(){document.querySelectorAll('.choice[data-type]').forEach(b=>b.classList.toggle('active',b.dataset.type===selectedExercise));}
+function renderRecentExercise(){
+  const recent=[...data.exercise].slice(-3).reverse(); if(!recent.length)return;
+  const box=el('div','recent-box',{left:'13%',top:'78.4%',width:'74%',height:'9.2%'});
+  box.innerHTML=recent.map(x=>`<div class="recent-row"><span>${x.type}</span><span>${x.minutes} 分钟</span><span>${x.time.slice(0,10)===today()?'今日':fmtDate(x.time)} ${x.time.slice(11,16)}</span></div>`).join('');
+}
+function renderSleep(){
+  const last=[...data.sleep].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  dyn(last?last.hours:7.5,15.0,40.6,13,3.6,5.3); dyn(last?qualityText(last.quality):'良好',47.0,40.6,15,3.6,4.8); dyn(avgSleep()||7.2,79.2,40.6,10,3.6,5.3);
+  const d=field('sDate','date',37.8,53.3,31.2,2.9,'',today());
+  const hours=field('sHours','number',37.8,57.5,30.0,2.9,'例如 8');
+  [['很好',38.0],['一般',55.0],['较差',72.0]].forEach(([q,left])=>{const b=button(left,61.7,14.5,3.4,()=>{selectedSleepQuality=q;renderSleepChoices()},'choice'); b.dataset.quality=q;});
+  const note=field('sNote','text',37.8,66.6,52.0,2.9,'例如：入睡快，整夜安稳');
+  button(31.0,70.9,43.0,4.0,()=>{const h=Number(hours.value);if(!h)return toast('请输入睡眠时长');data.sleep.push({id:uid(),date:d.value,hours:h,quality:selectedSleepQuality,note:note.value.trim()});save();toast('已保存睡眠记录');setPage('sleep')});
+  renderSleepChoices(); renderRecentSleep();
+}
+function qualityText(q){return typeof q==='number'?(['较差','较差','一般','一般','良好','很好'][q]||'良好'):q}
+function avgSleep(){if(!data.sleep.length)return 0;return (data.sleep.reduce((s,x)=>s+Number(x.hours||0),0)/data.sleep.length).toFixed(1)}
+function renderSleepChoices(){document.querySelectorAll('.choice[data-quality]').forEach(b=>b.classList.toggle('active',b.dataset.quality===selectedSleepQuality));}
+function renderRecentSleep(){const recent=[...data.sleep].slice(-3).reverse(); if(!recent.length)return; const box=el('div','recent-box',{left:'12%',top:'78.5%',width:'76%',height:'9.3%'}); box.innerHTML=recent.map(x=>`<div class="recent-row"><span>${fmtDate(x.date)}</span><span>${x.hours} 小时</span><span>${qualityText(x.quality)}</span></div>`).join('');}
+function renderPeriod(){
+  const starts=data.period.filter(x=>x.start).sort((a,b)=>a.date.localeCompare(b.date)); let gap=29; if(starts.length>1){gap=Math.round((new Date(starts.at(-1).date)-new Date(starts.at(-2).date))/86400000)}
+  dyn(starts.at(-1)?.date?.slice(5).replace('-','.')||'05.28',14.0,40.8,17,3.8,5.0); dyn(28,47.0,40.8,10,3.8,5.3); dyn(gap,78.5,40.8,10,3.8,5.3);
+  const d=field('pDate','date',67.0,53.5,23.0,2.8,'',today());
+  const tag1=field('pHead','date',67.0,58.0,23.0,2.8,'',today());
+  const tag2=field('pSleepBad','date',67.0,62.8,23.0,2.8,'',today());
+  const note=field('pNote','text',65.0,67.9,25.0,4.0,'例如：情绪波动较大');
+  button(64.0,74.4,28.0,3.9,()=>{data.period.push({id:uid(),date:d.value,start:true,tags:['头疼:'+tag1.value,'睡眠差:'+tag2.value],note:note.value.trim()});save();toast('已保存周期记录');setPage('period')});
+  renderRecentPeriod();
+}
+function renderRecentPeriod(){const recent=[...data.period].slice(-3).reverse(); if(!recent.length)return; const box=el('div','recent-box',{left:'16%',top:'82.0%',width:'76%',height:'7.7%'}); box.innerHTML=recent.map(x=>`<div class="recent-row"><span>${fmtDate(x.date)}</span><span>${x.start?'经期起始':'记录'}</span><span>${x.note||'周期长度：28天'}</span></div>`).join('');}
+function renderStats(){
+  const w=data.water.length?Math.round(data.water.reduce((s,x)=>s+x.ml,0)/data.water.length):1650;
+  const sl=data.sleep.length?(data.sleep.reduce((s,x)=>s+Number(x.hours||0),0)/data.sleep.length).toFixed(1):7.3;
+  const ex=data.exercise.reduce((s,x)=>s+x.minutes,0)||180;
+  dyn(w,15.5,40.6,15,3.7,5.1); dyn(sl,46.8,40.6,12,3.7,5.1); dyn(ex,78.0,40.6,12,3.7,5.1);
+  [['周',18],['月',35.8],['季度',53.6],['年',71.4]].forEach(([r,left])=>{const b=button(left,32.6,14.5,3.4,()=>{statRange=r;renderStatsRange()},'choice');b.dataset.range=r});
+  renderStatsRange();
+}
+function renderStatsRange(){document.querySelectorAll('.choice[data-range]').forEach(b=>b.classList.toggle('active',b.dataset.range===statRange));}
+function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='玥玥作息备份_'+today()+'.json';a.click();toast('已导出数据')}
+function importData(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{data={...defaultData(),...JSON.parse(r.result)};save();toast('已导入数据');setPage(current)}catch(err){toast('导入失败')}};r.readAsText(file);e.target.value=''}
+setPage('water');
+</script>
+</body>
+</html>
