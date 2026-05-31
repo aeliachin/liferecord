@@ -53,6 +53,7 @@
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
     .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
     .input,.select,textarea{width:100%;border:1px solid var(--line);background:#fff;border-radius:17px;padding:12px 13px;outline:none;color:var(--text);}
+    .compact-date-input{width:220px;max-width:100%;display:block;text-align:center;}
     textarea{resize:vertical;min-height:74px;}
     .label{font-size:12px;color:var(--muted);margin:0 0 6px 2px;}
     .field{margin-bottom:10px;}
@@ -152,7 +153,7 @@
         </div>
         <div class="card">
           <div class="card-title"><h3>记录喝水</h3><span class="muted">ml / L 都可以</span></div>
-          <div class="field"><div class="label">时间</div><input class="input" type="datetime-local" id="waterTime"></div>
+          <div class="field"><div class="label">时间</div><input class="input compact-date-input" type="datetime-local" id="waterTime"></div>
           <div class="grid-2">
             <div class="field"><div class="label">数量</div><input class="input" type="number" min="0" step="0.1" id="waterAmount" placeholder="例如 300"></div>
             <div class="field"><div class="label">单位</div><select class="select" id="waterUnit"><option value="ml">ml</option><option value="L">L</option></select></div>
@@ -182,7 +183,7 @@
         </div>
         <div class="card">
           <div class="card-title"><h3>记录运动</h3><span class="muted">散步 / 跑步 / 爬坡 / 拉伸</span></div>
-          <div class="field"><div class="label">时间</div><input class="input" type="datetime-local" id="exerciseTime"></div>
+          <div class="field"><div class="label">时间</div><input class="input compact-date-input" type="datetime-local" id="exerciseTime"></div>
           <div class="field"><div class="label">运动类型</div><div class="pill-tabs" id="exerciseTypes"></div></div>
           <div class="field"><div class="label">运动时长，分钟</div><input class="input" type="number" min="1" step="1" id="exerciseMinutes" placeholder="例如 30"></div>
           <div class="field"><div class="label">备注，可选</div><input class="input" id="exerciseNote" placeholder="例如 晚饭后散步"></div>
@@ -201,7 +202,7 @@
         </div>
         <div class="card">
           <div class="card-title"><h3>记录睡眠</h3><span class="muted">时长 + 质量</span></div>
-          <div class="field"><div class="label">日期</div><input class="input" type="date" id="sleepDate"></div>
+          <div class="field"><div class="label">日期</div><input class="input compact-date-input" type="date" id="sleepDate"></div>
           <div class="field"><div class="label">睡眠时长，小时</div><input class="input" type="number" min="0" max="24" step="0.1" id="sleepHours" placeholder="例如 7.5"></div>
           <div class="field"><div class="label">睡眠质量</div><div class="quality" id="qualityBtns"></div></div>
           <div class="field"><div class="label">备注，可选</div><input class="input" id="sleepNote" placeholder="例如 中途醒了一次"></div>
@@ -605,7 +606,7 @@
 
     function exportData(){
       const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`生活记录备份_${todayKey()}.json`; a.click(); URL.revokeObjectURL(a.href); toast('已导出数据');
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`猫生记录备份_${todayKey()}.json`; a.click(); URL.revokeObjectURL(a.href); toast('已导出数据');
     }
     function importData(e){
       const file=e.target.files[0]; if(!file)return;
@@ -627,4 +628,3 @@
   </script>
 </body>
 </html>
-
